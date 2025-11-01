@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FirexOTP - Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #00f3ff;
+            --secondary: #ff00e6;
+            --accent: #7700ff;
+            --success: #00ff9d;
+            --danger: #ff0040;
+            --warning: #ffd166;
+            --info: #00a2ff;
+            --dark: #0a0a12;
+            --darker: #050508;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glow: rgba(0, 243, 255, 0.3);
+            --cyber-border: 1px solid rgba(0, 243, 255, 0.3);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, #0f0f1a 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 15px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            opacity: 0.3;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Mobile First Header */
+        .admin-header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            border-bottom: var(--cyber-border);
+        }
+
+        .admin-header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .admin-header p {
+            color: #c7d2fe;
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            padding: 15px;
+            border-radius: 12px;
+            border: var(--cyber-border);
+            backdrop-filter: blur(20px);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 243, 255, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: #c7d2fe;
+            font-size: 0.75rem;
+        }
+
+        /* Mobile Navigation Tabs */
+        .mobile-tabs {
+            display: flex;
+            background: var(--glass);
+            border-radius: 12px;
+            padding: 8px;
+            margin-bottom: 20px;
+            border: var(--cyber-border);
+            backdrop-filter: blur(20px);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #c7d2fe;
+            padding: 12px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: black;
+            box-shadow: 0 4px 15px var(--glow);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Panel Sections - Mobile Optimized */
+        .panel-section {
+            background: var(--glass);
+            padding: 20px;
+            border-radius: 15px;
+            border: var(--cyber-border);
+            backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: var(--cyber-border);
+        }
+
+        .panel-header i {
+            font-size: 1.4rem;
+            color: var(--primary);
+        }
+
+        .panel-header h2 {
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #fff, #c7d2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* User Management - Mobile */
+        .user-search {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .search-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: var(--cyber-border);
+            border-radius: 8px;
+            padding: 14px;
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: black;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px var(--glow);
+        }
+
+        .user-details {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 18px;
+            border: var(--cyber-border);
+            margin-bottom: 18px;
+        }
+
+        .user-info {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            color: #c7d2fe;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .balance-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .balance-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: var(--cyber-border);
+            border-radius: 8px;
+            padding: 14px;
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--success), #00c97a);
+            color: black;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(135deg, var(--danger), #e6003c);
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.3);
+        }
+
+        .action-btn.danger:hover {
+            box-shadow: 0 5px 20px rgba(255, 0, 64, 0.3);
+        }
+
+        /* Users List - Mobile */
+        .users-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: var(--cyber-border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-item:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: translateX(5px);
+        }
+
+        .user-item.active {
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        .user-email {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .user-balance {
+            color: var(--success);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        /* API Tester - Mobile */
+        .tester-form {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            color: #c7d2fe;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-input, .form-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: var(--cyber-border);
+            border-radius: 8px;
+            padding: 14px;
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, var(--info), #0080ff);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 162, 255, 0.4);
+        }
+
+        /* Response Area - Mobile */
+        .response-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 18px;
+            border: var(--cyber-border);
+            min-height: 120px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            overflow-x: auto;
+        }
+
+        /* Logs Section - Mobile */
+        .logs-section {
+            background: var(--glass);
+            padding: 20px;
+            border-radius: 15px;
+            border: var(--cyber-border);
+            backdrop-filter: blur(20px);
+        }
+
+        .logs-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 18px;
+            border: var(--cyber-border);
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        .log-entry {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--primary);
+            font-size: 0.7rem;
+        }
+
+        .log-message {
+            color: white;
+            font-size: 0.75rem;
+            word-break: break-word;
+        }
+
+        /* Status Indicators */
+        .status-online {
+            color: var(--success);
+        }
+
+        .status-offline {
+            color: var(--danger);
+        }
+
+        /* Loader */
+        .loader {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Desktop Styles */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .container {
+                max-width: 1200px;
+            }
+
+            .admin-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .admin-header p {
+                font-size: 1.1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+            }
+
+            .stat-card {
+                padding: 25px;
+            }
+
+            .stat-icon {
+                font-size: 2.5rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .stat-label {
+                font-size: 0.9rem;
+            }
+
+            .mobile-tabs {
+                display: none;
+            }
+
+            .content-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 25px;
+            }
+
+            .tab-content {
+                display: block !important;
+            }
+
+            .user-search {
+                flex-direction: row;
+            }
+
+            .user-info {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .balance-actions {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .logs-container {
+                max-height: 300px;
+                font-size: 0.85rem;
+            }
+
+            .log-time, .log-message {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Large Desktop */
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 1400px;
+            }
+        }
+
+        /* Small Mobile Fixes */
+        @media (max-width: 360px) {
+            .admin-header h1 {
+                font-size: 1.6rem;
+            }
+            
+            .stat-card {
+                padding: 12px;
+            }
+            
+            .stat-number {
+                font-size: 1.2rem;
+            }
+            
+            .panel-section {
+                padding: 15px;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) {
+            .stat-card:hover,
+            .action-btn:hover,
+            .test-btn:hover,
+            .search-btn:hover,
+            .user-item:hover {
+                transform: none;
+            }
+            
+            .action-btn:active,
+            .test-btn:active,
+            .search-btn:active {
+                transform: scale(0.98);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="admin-header">
+            <h1><i class="fas fa-shield-alt"></i> FirexOTP Admin</h1>
+            <p>User Management & System Monitoring</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--success);">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="stat-number" id="serverStatus">...</div>
+                <div class="stat-label">Server Status</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--primary);">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number" id="totalUsers">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--info);">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="stat-number" id="totalBalance">₹0</div>
+                <div class="stat-label">Total Balance</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon" style="color: var(--warning);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-number" id="activeToday">0</div>
+                <div class="stat-label">Active Today</div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Tabs -->
+        <div class="mobile-tabs">
+            <button class="tab-btn active" onclick="switchTab('users')">
+                <i class="fas fa-users"></i>
+                <span>Users</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('api')">
+                <i class="fas fa-terminal"></i>
+                <span>API Test</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('logs')">
+                <i class="fas fa-list-alt"></i>
+                <span>Logs</span>
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content-grid">
+            <!-- Users Tab -->
+            <div class="tab-content active" id="users-tab">
+                <div class="panel-section">
+                    <div class="panel-header">
+                        <i class="fas fa-user-cog"></i>
+                        <h2>User Management</h2>
+                    </div>
+                    
+                    <div class="user-search">
+                        <input type="email" class="search-input" id="searchEmail" placeholder="Search by email...">
+                        <button class="search-btn" onclick="searchUser()">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    
+                    <div class="user-details" id="userDetails" style="display: none;">
+                        <div class="user-info">
+                            <div class="info-item">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value" id="userEmail">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">User ID:</span>
+                                <span class="info-value" id="userId">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Balance:</span>
+                                <span class="info-value" id="userBalance">₹0</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Joined:</span>
+                                <span class="info-value" id="userJoined">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="balance-actions">
+                            <input type="number" class="balance-input" id="balanceAmount" placeholder="Amount" min="1">
+                            <button class="action-btn" onclick="addBalance()">
+                                <i class="fas fa-plus"></i> Add Balance
+                            </button>
+                            <input type="number" class="balance-input" id="deductAmount" placeholder="Amount" min="1">
+                            <button class="action-btn danger" onclick="deductBalance()">
+                                <i class="fas fa-minus"></i> Deduct Balance
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-header">
+                        <i class="fas fa-list"></i>
+                        <h2>Recent Users</h2>
+                    </div>
+                    
+                    <div class="users-list" id="usersList">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Test Tab -->
+            <div class="tab-content" id="api-tab">
+                <div class="panel-section">
+                    <div class="panel-header">
+                        <i class="fas fa-terminal"></i>
+                        <h2>API Tester</h2>
+                    </div>
+                    
+                    <div class="tester-form">
+                        <div class="form-group">
+                            <label class="form-label">API Endpoint</label>
+                            <select class="form-select" id="apiEndpoint">
+                                <option value="health">Health Check</option>
+                                <option value="getNumber">Get Number</option>
+                                <option value="getOtp">Get OTP</option>
+                                <option value="cancelNumber">Cancel Number</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="idInputGroup" style="display: none;">
+                            <label class="form-label">Request ID</label>
+                            <input type="text" class="form-input" id="requestId" placeholder="Enter request ID">
+                        </div>
+                        
+                        <button class="test-btn" onclick="testApi()">
+                            <i class="fas fa-play"></i> Test API
+                        </button>
+                    </div>
+                    
+                    <div class="response-area" id="apiResponse">
+                        API response will appear here...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-content" id="logs-tab">
+                <div class="logs-section">
+                    <div class="panel-header">
+                        <i class="fas fa-list-alt"></i>
+                        <h2>Admin Logs</h2>
+                    </div>
+                    
+                    <div class="logs-container" id="logsContainer">
+                        <div class="log-entry">
+                            <span class="log-time">[12:00:00]</span>
+                            <span class="log-message">Admin panel initialized</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpvAAef2kZ_V5NomsN_VkmYRCU-q4ECXA",
+            authDomain: "happy-seller-3d85b.firebaseapp.com",
+            databaseURL: "https://happy-seller-3d85b-default-rtdb.firebaseio.com",
+            projectId: "happy-seller-3d85b",
+            storageBucket: "happy-seller-3d85b.firebasestorage.app",
+            messagingSenderId: "992869798959",
+            appId: "1:992869798959:web:03879929680e45610a62da",
+            measurementId: "G-476CG6EE86"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const API_BASE = '/api?path=';
+        let logs = [];
+        let currentUser = null;
+        let allUsers = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServerStatus();
+            updateEndpointVisibility();
+            loadAllUsers();
+            
+            // Auto refresh
+            setInterval(checkServerStatus, 30000);
+            setInterval(loadAllUsers, 60000);
+        });
+
+        // Mobile Tab Switching
+        function switchTab(tabName) {
+            // Update tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // API Endpoint visibility
+        document.getElementById('apiEndpoint').addEventListener('change', updateEndpointVisibility);
+
+        function updateEndpointVisibility() {
+            const endpoint = document.getElementById('apiEndpoint').value;
+            const idInputGroup = document.getElementById('idInputGroup');
+            
+            if (endpoint === 'getOtp' || endpoint === 'cancelNumber') {
+                idInputGroup.style.display = 'flex';
+            } else {
+                idInputGroup.style.display = 'none';
+            }
+        }
+
+        // Load all users from Firebase
+        function loadAllUsers() {
+            database.ref('users').once('value')
+                .then(snapshot => {
+                    const users = snapshot.val() || {};
+                    allUsers = Object.entries(users).map(([uid, userData]) => ({
+                        uid,
+                        email: userData.email,
+                        wallet: userData.wallet || 0,
+                        joined: userData.joined || Date.now()
+                    }));
+                    
+                    updateUsersList();
+                    updateStats();
+                })
+                .catch(error => {
+                    addLog('Error loading users: ' + error.message);
+                });
+        }
+
+        // Update users list UI
+        function updateUsersList() {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '';
+            
+            // Sort by recent first
+            const sortedUsers = allUsers.sort((a, b) => b.joined - a.joined).slice(0, 10);
+            
+            sortedUsers.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.onclick = () => selectUser(user);
+                
+                const joinDate = new Date(user.joined).toLocaleDateString();
+                
+                userItem.innerHTML = `
+                    <div class="user-email">${user.email}</div>
+                    <div class="user-balance">₹${user.wallet}</div>
+                    <div style="color: #c7d2fe; font-size: 0.75rem;">Joined: ${joinDate}</div>
+                `;
+                
+                usersList.appendChild(userItem);
+            });
+            
+            document.getElementById('totalUsers').textContent = allUsers.length;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalBalance = allUsers.reduce((sum, user) => sum + (user.wallet || 0), 0);
+            const activeToday = allUsers.filter(user => {
+                const joinDate = new Date(user.joined);
+                const today = new Date();
+                return joinDate.toDateString() === today.toDateString();
+            }).length;
+            
+            document.getElementById('totalBalance').textContent = '₹' + totalBalance;
+            document.getElementById('activeToday').textContent = activeToday;
+        }
+
+        // Search user by email
+        function searchUser() {
+            const searchEmail = document.getElementById('searchEmail').value.trim().toLowerCase();
+            
+            if (!searchEmail) {
+                addLog('Please enter an email address');
+                return;
+            }
+            
+            const foundUser = allUsers.find(user => 
+                user.email.toLowerCase().includes(searchEmail)
+            );
+            
+            if (foundUser) {
+                selectUser(foundUser);
+            } else {
+                addLog('User not found: ' + searchEmail);
+            }
+        }
+
+        // Select user for management
+        function selectUser(user) {
+            currentUser = user;
+            
+            // Update UI
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userId').textContent = user.uid;
+            document.getElementById('userBalance').textContent = '₹' + user.wallet;
+            document.getElementById('userJoined').textContent = new Date(user.joined).toLocaleString();
+            
+            document.getElementById('userDetails').style.display = 'block';
+            
+            // Clear input fields
+            document.getElementById('balanceAmount').value = '';
+            document.getElementById('deductAmount').value = '';
+            
+            // Update active state in list
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            event.currentTarget.classList.add('active');
+            
+            addLog('Selected user: ' + user.email);
+            
+            // Switch to users tab on mobile
+            if (window.innerWidth < 768) {
+                switchTab('users');
+            }
+        }
+
+        // Add balance to user
+        function addBalance() {
+            if (!currentUser) {
+                addLog('Please select a user first');
+                return;
+            }
+            
+            const amount = parseInt(document.getElementById('balanceAmount').value);
+            if (!amount || amount < 1) {
+                addLog('Please enter a valid amount');
+                return;
+            }
+            
+            const userRef = database.ref('users/' + currentUser.uid + '/wallet');
+            
+            userRef.transaction(currentBalance => {
+                return (currentBalance || 0) + amount;
+            })
+            .then(() => {
+                addLog(`Added ₹${amount} to ${currentUser.email}`);
+                document.getElementById('balanceAmount').value = '';
+                loadAllUsers(); // Refresh data
+            })
+            .catch(error => {
+                addLog('Error adding balance: ' + error.message);
+            });
+        }
+
+        // Deduct balance from user
+        function deductBalance() {
+            if (!currentUser) {
+                addLog('Please select a user first');
+                return;
+            }
+            
+            const amount = parseInt(document.getElementById('deductAmount').value);
+            if (!amount || amount < 1) {
+                addLog('Please enter a valid amount');
+                return;
+            }
+            
+            const userRef = database.ref('users/' + currentUser.uid + '/wallet');
+            
+            userRef.transaction(currentBalance => {
+                const balance = currentBalance || 0;
+                if (balance < amount) {
+                    throw new Error('Insufficient balance');
+                }
+                return balance - amount;
+            })
+            .then(() => {
+                addLog(`Deducted ₹${amount} from ${currentUser.email}`);
+                document.getElementById('deductAmount').value = '';
+                loadAllUsers(); // Refresh data
+            })
+            .catch(error => {
+                addLog('Error deducting balance: ' + error.message);
+            });
+        }
+
+        // Server status check
+        async function checkServerStatus() {
+            const statusElement = document.getElementById('serverStatus');
+            statusElement.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await fetch(API_BASE + 'health');
+                const data = await response.json();
+                
+                if (data.status === 'OK') {
+                    statusElement.innerHTML = '<span class="status-online"><i class="fas fa-check-circle"></i></span>';
+                }
+            } catch (error) {
+                statusElement.innerHTML = '<span class="status-offline"><i class="fas fa-times-circle"></i></span>';
+            }
+        }
+
+        // Test API function
+        async function testApi() {
+            const endpoint = document.getElementById('apiEndpoint').value;
+            const requestId = document.getElementById('requestId').value;
+            const responseElement = document.getElementById('apiResponse');
+            
+            responseElement.innerHTML = '<div class="loader"></div> Testing...';
+            
+            let url = API_BASE + endpoint;
+            if (requestId) {
+                url += '&id=' + encodeURIComponent(requestId);
+            }
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                responseElement.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                addLog(`API Test: ${endpoint} - Success`);
+                
+            } catch (error) {
+                responseElement.innerHTML = `<pre style="color: var(--danger);">Error: ${error.message}</pre>`;
+                addLog(`API Test: ${endpoint} - Failed: ${error.message}`);
+            }
+        }
+
+        // Logging function
+        function addLog(message) {
+            const now = new Date();
+            const timeString = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+            
+            logs.unshift({ time: timeString, message: message });
+            if (logs.length > 50) logs.pop();
+            
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.innerHTML = '';
+            
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `<span class="log-time">${log.time}</span> <span class="log-message">${log.message}</span>`;
+                logsContainer.appendChild(logEntry);
+            });
+        }
+
+        // Auto-add some demo logs
+        setTimeout(() => addLog('Admin panel initialized'), 1000);
+        setTimeout(() => addLog('Firebase connected successfully'), 1500);
+    </script>
+</body>
+</html>
